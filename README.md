@@ -126,6 +126,7 @@ Attributes
 * `node['munin']['server_role']` - role of the munin server. Default is monitoring.
 * `node['munin']['docroot']` - document root for the server apache vhost. on archlinux, the default is `/srv/http/munin`, or `/var/www/munin` on other platforms.
 * `node['munin']['web_server']` - supports apache or nginx, default is "apache"
+* `node['munin']['nginx_fastcgi_support']` - provides fast-cgi graphs config section for "nginx" web_server
 
 Recipes
 =======

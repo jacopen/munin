@@ -140,6 +140,7 @@ end
 directory node['munin']['docroot'] do
   owner "munin"
   group "munin"
+  recursive "true"
   mode 0755
 end
 

@@ -8,6 +8,7 @@ version           "1.3.3"
 
 depends "apache2", ">= 1.0.6"
 depends "nginx"
+depends "apt"
 
 %w{arch debian ubuntu redhat centos scientific fedora freebsd}.each do |os|
   supports os

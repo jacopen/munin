@@ -17,10 +17,36 @@
 # limitations under the License.
 #
 
-if node['munin']['multi_environment_monitoring']
-  munin_servers = search(:node, "role:#{node['munin']['server_role']}")
-else  
-  munin_servers = search(:node, "role:#{node['munin']['server_role']} AND chef_environment:#{node.chef_environment}")
+
+if Chef::Config[:solo]
+  munin_servers = [node]
+else
+  if node['munin']['multi_environment_monitoring']
+    munin_servers = search(:node, "role:#{node['munin']['server_role']}")
+  else  
+    munin_servers = search(:node, "role:#{node['munin']['server_role']} AND chef_environment:#{node.chef_environment}")
+  end
+end
+
+
+case node['platform']
+when "ubuntu", "debian"
+  include_recipe "apt"
+  
+  apt_repository "munin-ppa" do
+    uri "http://ppa.launchpad.net/tuxpoldo/munin/ubuntu"
+    distribution node['lsb']['codename']
+    components ["main"]
+    keyserver "keyserver.ubuntu.com"
+    key "D294A752"
+    deb_src true
+  end
+  
+  apt_preference "munin" do
+    glob "munin*"
+    pin "release o=LP-PPA-tuxpoldo-munin"
+    pin_priority "991"
+  end
 end
 
 package "munin-node"

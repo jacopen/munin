@@ -17,6 +17,7 @@
 # limitations under the License.
 #
 
+
 unless node['munin']['public_domain']
   if node['public_domain']
     case node.chef_environment
@@ -52,16 +53,25 @@ end
 
 include_recipe "munin::client"
 
-sysadmins = search(:users, 'groups:sysadmin')
-if node['munin']['multi_environment_monitoring']
-  munin_servers = search(:node, "munin:[* TO *]")
-else  
-  munin_servers = search(:node, "munin:[* TO *] AND chef_environment:#{node.chef_environment}")
+sysadmins = []
+if Chef::Config[:solo]
+  users = data_bag('users')
+  users.each do |user_info|
+    user = data_bag_item('users', user_info)
+    sysadmins << user
+  end
+else
+  sysadmins = search(:users, 'groups:sysadmin')
 end
-if munin_servers.empty?
-  Chef::Log.info("No nodes returned from search, using this node so munin configuration has data")
-  munin_servers = Array.new
-  munin_servers << node
+
+if Chef::Config[:solo]
+  munin_servers = [node]
+else
+  if node['munin']['multi_environment_monitoring']
+    munin_servers = search(:node, "munin:[* TO *]")
+  else  
+    munin_servers = search(:node, "munin:[* TO *] AND chef_environment:#{node.chef_environment}")
+  end
 end
 
 munin_servers.sort! { |a,b| a[:fqdn] <=> b[:fqdn] }
@@ -69,6 +79,25 @@ munin_servers.sort! { |a,b| a[:fqdn] <=> b[:fqdn] }
 case node['platform']
 when "freebsd"
   package "munin-master"
+when "ubuntu", "debian"
+  include_recipe "apt"
+  
+  apt_repository "munin-ppa" do
+    uri "http://ppa.launchpad.net/tuxpoldo/munin/ubuntu"
+    distribution node['lsb']['codename']
+    components ["main"]
+    keyserver "keyserver.ubuntu.com"
+    key "D294A752"
+    deb_src true
+  end
+  
+  apt_preference "munin" do
+    glob "munin*"
+    pin "release o=LP-PPA-tuxpoldo-munin"
+    pin_priority "991"
+  end
+
+  package "munin"
 else
   package "munin"
 end
